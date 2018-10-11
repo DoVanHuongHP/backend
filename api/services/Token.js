@@ -78,3 +78,4 @@ module.exports.getToken = function getToken(request, next, throwError) {
 
   return sails.services.token.verify(token, next);
 };
+var jwt = require("jsonwebtoken");

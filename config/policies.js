@@ -79,4 +79,6 @@ module.exports.policies = {
     'add':        false,
     'remove':     false
   }
+
+  
 };

@@ -20,15 +20,15 @@
 //  * For more information on configuration, check out:
 //  * http://sailsjs.org/#/documentation/reference/sails.config/sails.config.connections.html
 //  */
-// module.exports.connections = {
+module.exports.connections = {
 //   /**
 //    * Local disk storage for DEVELOPMENT ONLY
 //    *
 //    * Installed by default.
 //    */
-//   localDiskDb: {
-//     adapter: 'sails-disk'
-//   },
+  localDiskDb: {
+    adapter: 'sails-disk'
+  },
 
 //   /**
 //    * MySQL is the world's most popular relational database.
@@ -52,14 +52,14 @@
    * Run:
    * npm install sails-mongo
    */
-//   mongodb: {
-//     adapter: 'sails-mongo',
-//     host: 'localhost',
-//     port: 27017,
-//     // user: '',
-//     // password: '',
-//     database: 'myreactdev'
-//   },
+  mongodb: {
+    adapter: 'sails-mongo',
+    host: 'localhost',
+    port: 27017,
+    user: '',
+    password: '',
+    database: 'myreactdev'
+  },
 
 //   /**
 //    * PostgreSQL is another officially supported relational database.
@@ -80,4 +80,4 @@
 //    * More adapters:
 //    * https://github.com/balderdashy/sails
 //    */
-// };
+};

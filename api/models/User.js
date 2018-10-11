@@ -10,7 +10,7 @@ var _ = require('lodash');
  */
 module.exports = _.merge(_.cloneDeep(require('../base/Model')), {
   attributes: {
-    provider: 'string',
+    connection: 'string',
     username: {
       type: 'string',
       unique: true
@@ -31,6 +31,16 @@ module.exports = _.merge(_.cloneDeep(require('../base/Model')), {
       type: 'boolean',
       defaultsTo: false
     },
+    access_token:{
+      type:'string',
+      unique:true,
+    },
+
+    id_token:{
+      type:'string',
+      unique:true,
+    },
+
 
     // Below is all specification for relations to another models
 
@@ -61,6 +71,7 @@ module.exports = _.merge(_.cloneDeep(require('../base/Model')), {
       collection: 'Author',
       via: 'createdUser'
     },
+
     updatedAuthors: {
       collection: 'Author',
       via: 'updatedUser'
@@ -77,5 +88,20 @@ module.exports = _.merge(_.cloneDeep(require('../base/Model')), {
     }
   },
 
-  // connection: 'mongodb'
+  connection: 'mongodb'
 });
+
+
+// module.exports = {
+
+//   adapter: 'mongo',
+
+//   attributes: {
+//     provider: 'STRING',
+//     uid: 'STRING',
+//     name: 'STRING',
+//     email: 'STRING',
+//     firstname: 'STRING',
+//     lastname: 'STRING'
+//   }// connection: 'mongodb'
+// };

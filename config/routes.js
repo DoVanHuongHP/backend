@@ -28,6 +28,7 @@ module.exports.routes = {
   },
 
   // Authentication routes
+  '/login':'AuthController.login',
   '/logout': 'AuthController.logout',
   'POST /login': 'AuthController.callback',
   'POST /login/:action': 'AuthController.callback',

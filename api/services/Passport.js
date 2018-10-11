@@ -29,7 +29,9 @@ var passport = require('passport');
 var path = require('path');
 var url = require('url');
 var _ = require('lodash');
-
+var app = express();
+var session = require('express-session');
+var Auth0Strategy = require('passport-auth0');
 // Load authentication protocols
 passport.protocols = require('./protocols');
 
@@ -165,24 +167,38 @@ passport.endpoint = function endpoint(request, response) {
   var strategies = sails.config.passport;
   var provider = request.param('provider');
   var options = {};
+  var connection = 'google-oauth2';
+
 
   // If a provider doesn't exist for this endpoint, send the user back to the login page
-  if (!strategies.hasOwnProperty(provider)) {
-    response.json(401, 'Unknown auth provider');
-  } else {
-    // Attach scope if it has been set in the config
-    if (strategies[provider].hasOwnProperty('scope')) {
-      options.scope = strategies[provider].scope;
+  // if (!strategies.hasOwnProperty(provider)) {
+  //   response.json(401, 'Unknown auth provider');
+  // } else {
+  //   // Attach scope if it has been set in the config
+  //   if (strategies[provider].hasOwnProperty('scope')) {
+  //     options.scope = strategies[provider].scope;
+  //   }
+
+  //   // Load authentication strategies
+  //   this.loadStrategies(request);
+
+  //   // Redirect the user to the provider for authentication. When complete,
+  //   // the provider will redirect the user back to the application at
+  //   //     /auth/:provider/callback
+  //   this.authenticate(provider, options)(request, response, request.next);
+  //   //passport.authenticate('auth0', {connection: 'google-oauth2'}), function (req, res) {
+  // }
+
+  this.authenticate('auth0', { connection: connection }), function (req, res) {
+    res.next();
+  },
+    this.authenticate('auth0', { connection: 'auth0' }), function (req, res) {
+      res.next();
     }
-
-    // Load authentication strategies
-    this.loadStrategies(request);
-
-    // Redirect the user to the provider for authentication. When complete,
-    // the provider will redirect the user back to the application at
-    //     /auth/:provider/callback
-    this.authenticate(provider, options)(request, response, request.next);
+  this.authenticate('auth0', { connection: 'facebook' }), function (req, res) {
+    res.next();
   }
+
 };
 
 /**
@@ -247,8 +263,8 @@ passport.loadStrategies = function loadStrategies(request) {
   var self = this;
   var strategies = sails.config.passport;
 
-  Object.keys(strategies).forEach(function(key) {
-    var options = {passReqToCallback: true};
+  Object.keys(strategies).forEach(function (key) {
+    var options = { passReqToCallback: true };
     var Strategy;
 
     if (key === 'local') {
@@ -256,7 +272,7 @@ passport.loadStrategies = function loadStrategies(request) {
        * Since we need to allow users to login using both usernames as well as
        * emails, we'll set the username field to something more generic.
        */
-      _.extend(options, {usernameField: 'identifier'});
+      _.extend(options, { usernameField: 'identifier' });
 
       // Only load the local strategy if it's enabled in the config
       if (strategies.local) {
@@ -304,7 +320,7 @@ passport.serializeUser(function serializeUser(user, next) {
   sails.log.verbose(__filename + ':' + __line + ' [Service.Passport.serializeUser() called]');
 
   if (!user) {
-    next({message: 'Invalid user.'}, null);
+    next({ message: 'Invalid user.' }, null);
   } else {
     next(null, user.id);
   }
@@ -315,5 +331,147 @@ passport.deserializeUser(function deserializeUser(id, next) {
 
   sails.models['user'].findOne(id, next);
 });
+
+// passport.use('local-singup', new localStorage({
+
+//   username: 'email',
+//   password: 'password',
+//   // cho phép gửi reqest lại hàm callback
+//   passReqToCallback:true,
+// },
+//   function (req, email, password, done) {
+//     // asynchronous
+//     // Hàm callback của nextTick chỉ được thực hiện khi hàm trên nó trong stack (LIFO) được thực hiện
+//     // User.findOne sẽ không được gọi cho tới khi dữ liệu được gửi lại
+//     process.nextTick(function () {
+//         // Tìm một user theo email
+//         // chúng ta kiểm tra xem user đã tồn tại hay không
+//         User.findOne({'local.email': email}, function (err, user) {
+//           if(err) return done (err);
+//           // sử dụng req.flash để thông báo 
+//           if( user) return done (null, false, req.flash('singupMessage','That email is already taken'))
+
+//           else {
+//                 // Nếu chưa user nào sử dụng email này
+//                 // tạo mới user
+//                 var newUser = new User();
+//                 // lưu thông tin cho tài khoản local
+//                 newUser.provider = 'local';
+//                 newUser.email = email;
+//                 newUser.password = newUser.generateHash(password);
+//                 // lưu user
+//                 newUser.save(function (err) {
+//                     if (err)
+//                         throw err;
+//                     return done(null, newUser);
+//                 });
+//             }
+//         });
+//     });
+// }));
+
+//  passport.user('login', new LocalStrategy({
+//   usernameField: email,
+//   passwordField: password,
+//   passReqToCallback: true,
+//  },
+//  // gọi email, password từ callback
+//  function(req, email, password,done){
+//     User.findOne({'email': email}, function (err, user) {
+//       if (err)
+//           return done(err);
+//       // nếu không tìm thấy user sẽ thông báo not found
+//       if (!user)
+//           return done(null, false, req.flash('loginMessage', 'No user found.'));
+//       // all is well, return successful user
+//       return done(null, user);
+//   });
+// }));
+
+// passport.use(new socialStrategy({
+//   clientID: passport.social.clientID,
+//   clientSecret: passport.social.clientSecret,
+//   callbackURL: passport.social.callbackURL,
+//   profileFields: ['_id','displayName','email'],
+// },
+// function (token, refreshToken, profile, done) {
+//   process.nextTick(function () {
+//       // // tìm trong db xem có user nào đã sử dụng google id, facebook này chưa
+//       User.findOne({'_id': profile.id}, function (err, user) {
+//           if (err)
+//               return done(err);
+//           if (user) {
+//               // if a user is found, log them in
+//               return done(null, user);
+//           } else {
+//               // if user chưa tồn tạo tạo user trong database
+//               var newUser = new User();
+//                 newUser.provider = "social";
+//                 newUser._id = profile.id;
+//                 newUser.token = token;
+//                 newUser.name = profile.displayName;
+//                 newUser.email = profile.emails[0].value; // pull the first email
+
+//               // save the user
+//               newUser.save(function (err) {
+//                   if (err)
+//                       throw err;
+//                   return done(null, newUser);
+//               });
+//           }
+//       });
+//   });
+// }));
+
+
+var strategy = new Auth0Strategy({
+  domain: 'dohuong.auth0.com',
+  clientID: '4pGfc813UcQrIweXV8hH25RCNomfByno',
+  clientSecret: 'V_zOEiP5Ed77OJR3OIOZNNhFTxitJYu6nf_4uemC9KrfddSShOWxpAH7LoYqtaXu',
+  callbackURL: 'http://localhost:3000/callback',
+  profileFields: ['email'],
+},
+  function (accessToken, refreshToken, extraParams, profile, done) {
+    // accessToken is the token to call Auth0 API (not needed in the most cases)
+    // extraParams.id_token has the JSON Web Token
+    // profile has all the information from the user
+
+    console.log(profile);
+    User.findOne({ user_id: profile.user_id }, (err, user) => {
+      if (err) return done(err)
+      if (user) return done(null, user)
+
+      const newUser = new User({
+        user_id: profile.user_id,
+        connection: profile.identities.connection,
+        email: profile.email,
+        access_token: accessToken,
+        id_token: extraParams.id_token
+      })
+
+      newUser.save((err) => {
+        return done(null, newUser);
+      })
+    });
+  }
+);
+
+
+var sess = {
+  secret: 'CHANGE THIS SECRET',
+  cookie: {
+    maxAge: 1000 * 60 * 10,
+  },
+  resave: false,
+  saveUninitialized: true
+};
+
+app.user(session(sess));
+
+passport.use(strategy);
+app.use(passport.initialize());
+
+app.user(passport.session());
+
 
 module.exports = passport;

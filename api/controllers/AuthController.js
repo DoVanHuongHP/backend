@@ -2,6 +2,9 @@
 
 var async = require('async');
 var _ = require('lodash');
+const express = require('express');
+const passport = require('passport');
+var Auth0Strategy = require('passport-auth0');
 
 /**
  * Authentication Controller
@@ -23,10 +26,46 @@ var AuthController = {
    * @param   {Request}   request     Request object
    * @param   {Response}  response    Response object
    */
+
+  login: function login(request, response) {
+    re
+    // passport.authenticate('auth0', { scope: 'openid email profile' })
+    // var token = jwt.singup(user.toJSON(), "this is my secret key", {expiresIn: '24h'});
+    passport.authenticate('auth0', { connection: 'auth0' }), function (req, res) {
+      res.next();
+    }
+    response.ok(token);
+    response.json(200, request.user);
+    response.json(200, true);
+  },
   logout: function logout(request, response) {
     request.logout();
-
     response.json(200, true);
+    
+  },
+  singup: function singup(req, res) {
+      var email = req.email;
+      var password = req.password;
+      if (!email || !password) {
+        return res.json(401, {err: 'Please fill in all the fields'});
+      }
+      User.create({ email: req.email, password: req.password}), function (err, user) {
+        if(err) return res.json({ err: err }, 500);
+       
+        else {
+          res.json(200,{success: true, message: "User Registered successfully. Please, go to login" });
+          res.json(user);
+        }
+      }
+    
+  },
+  private:function private(req,res){
+    if(req.isAuthenticated()){
+      res.json({message: "Ban chua dang nhap"});
+    }
+    else {
+      res.json(200,{success:true, message:"Wellcome"});
+    }
   },
 
   /**
@@ -75,25 +114,39 @@ var AuthController = {
    * @param   {Response}  response    Response object
    */
   callback: function callback(request, response) {
-    sails.services['passport'].callback(request, response, function callback(error, user) {
-      request.login(user, function callback(error) {
-        // If an error was thrown, redirect the user to the login which should
-        // take care of rendering the error messages.
-        if (error) {
-          sails.log.verbose('User authentication failed');
-          sails.log.verbose(error);
+    passport.authenticate('auth0', { scope: 'openid email profile'}),
 
-          response.json(401, error);
-        } else { // Upon successful login, send back user data and JWT token
-          sails.services['logger'].login(user, request);
 
-          response.json(200, {
-            user: user,
-            token: sails.services['token'].issue(_.isObject(user.id) ? JSON.stringify(user.id) : user.id)
-          });
-        }
+    // scope=openid: Chỉ trả lại iss, sub, aud, exp và iat khiếu nại.
+    // scope=openid email: Sẽ trở lại tuyên bố cho openid thêm vào email
+    // scope=openid profile: sẽ trả về tất cả các thuộc tính người dùng trong mã thông báo.
+
+
+    // iss : người phát hành mã thông báo
+    // exp : thời gian hết hạn (mã thông báo từ chối đã hết hạn). exprise
+    // aud : api định danh của mình 
+    // iat : Thời điểm JWT được phát hành. Có thể được sử dụng để xác định tuổi của JWT
+    // sub : chủ đề của mã thông báo (hiếm khi được sử dụng)
+    
+      sails.services['passport'].callback(request, response, function callback(error, user) {
+        request.login(user, function callback(error) {
+          // If an error was thrown, redirect the user to the login which should
+          // take care of rendering the error messages.
+          if (error) {
+            sails.log.verbose('User authentication failed');
+            sails.log.verbose(error);
+
+            response.json(401, error);
+          } else { // Upon successful login, send back user data and JWT token
+            sails.services['logger'].login(user, request);
+
+            response.json(200, {
+              user: user,
+              token: sails.services['token'].issue(_.isObject(user.id) ? JSON.stringify(user.id) : user.id)
+            });
+          }
+        });
       });
-    });
   },
 
   /**
@@ -123,12 +176,12 @@ var AuthController = {
           if (error) {
             next(error);
           } else if (!passport) {
-            next({message: 'Given authorization token is not valid'});
+            next({ message: 'Given authorization token is not valid' });
           } else {
             next(null, passport);
           }
         })
-      ;
+        ;
     };
 
     /**
@@ -142,7 +195,7 @@ var AuthController = {
 
       passport.validatePassword(password, function callback(error, matched) {
         if (error) {
-          next({message: 'Invalid password'});
+          next({ message: 'Invalid password' });
         } else {
           next(null, matched);
         }
@@ -162,7 +215,7 @@ var AuthController = {
       } else if (result) {
         response.json(200, result);
       } else {
-        response.json(400, {message: 'Given password does not match.'});
+        response.json(400, { message: 'Given password does not match.' });
       }
     };
 
@@ -170,5 +223,7 @@ var AuthController = {
     async.waterfall([findPassport, validatePassword], callback);
   }
 };
+
+
 
 module.exports = AuthController;

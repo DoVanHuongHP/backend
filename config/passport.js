@@ -16,6 +16,7 @@
  * http://passportjs.org/guide/providers/
  */
 module.exports.passport = {
+  auth0: {},
   local: {
     strategy: require('passport-local').Strategy
   },
